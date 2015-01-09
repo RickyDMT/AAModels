@@ -47,8 +47,8 @@ STIM.totes = STIM.blocks*STIM.trials;
 STIM.trialdur = 4;
 STIM.framedelay = 1;
 STIM.jit = [.5 .25 .1];
-STIM.minside = 100;
-STIM.maxside = 300;
+STIM.minside = 200;
+STIM.maxside = 200;
 
 
 %% Find & load in pics
@@ -158,7 +158,7 @@ commandwindow;
 
 %%
 %change this to 0 to fill whole screen
-DEBUG=0;
+DEBUG=1;
 
 %set up the screen and dimensions
 
@@ -264,7 +264,7 @@ for block = 1:STIM.blocks
             while side < STIM.minside
                 side = side + 10;
                 zoom = STIM.imgrect + [side;side;-side;-side];
-                Screen('FillRect',w,COLORS.GREEN,STIM.framerect);
+%                 Screen('FillRect',w,COLORS.GREEN,STIM.framerect);
                 Screen('DrawTexture',w,tpic,[],zoom);
                 Screen('Flip',w);
             end
@@ -273,10 +273,11 @@ for block = 1:STIM.blocks
             while side < STIM.maxside
                 side = side + 10;
                 zoom = STIM.imgrect + [-side; -side; side; side];
-                Screen('FillRect',w,COLORS.GREEN,STIM.framerect);
+%                 Screen('FillRect',w,COLORS.GREEN,STIM.framerect);
                 Screen('DrawTexture',w,tpic,[],zoom);
                 Screen('Flip',w);
             end
+           
         end
                     
     end
