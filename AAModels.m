@@ -1,18 +1,14 @@
 
 function AAModels(varargin)
-
-
-global KEYS COLORS w wRect XCENTER YCENTER PICS STIM AAM rects mids
-
-prompt={'SUBJECT ID' 'Condition' 'Session (1, 2, or 3)' 'Practice? 0 or 1'};
-defAns={'4444' '1' '1' '0'};
+prompt={'SUBJECT ID'};
+defAns={'4444'};
 
 answer=inputdlg(prompt,'Please input subject info',1,defAns);
 
 ID=str2double(answer{1});
-COND = str2double(answer{2});
-SESS = str2double(answer{3});
-prac = str2double(answer{4});
+% COND = str2double(answer{2});
+% SESS = str2double(answer{3});
+% prac = str2double(answer{4});
 
 
 rng(ID); %Seed random number generator with subject ID
@@ -46,47 +42,18 @@ STIM.trials = 40;
 STIM.totes = STIM.blocks*STIM.trials;
 STIM.trialdur = 4;
 STIM.framedelay = 1;
-STIM.jit = [.5 .25 .1];
+STIM.jit = [1 1.5 2];
 STIM.minside = 200;
 STIM.maxside = 200;
 
 
 %% Find & load in pics
-[imgdir,~,~] = fileparts(which('ModelPairPics.m'));
-% picratefolder = fullfile(imgdir,'SavingsRatings');
-
-% try
-%     cd(picratefolder)
-% catch
-%     error('Could not find and/or open the image directory.');
-% end
-% 
-% filen = sprintf('PicRate_%03d.mat',ID);
-% try
-%     p = open(filen);
-% catch
-%     warning('Could not find and/or open the rating file.');
-%     commandwindow;
-%     randopics = input('Would you like to continue with a random selection of images? [1 = Yes, 0 = No]');
-%     if randopics == 1
-%         p = struct;
-%         p.PicRating.go = dir('Healthy*');
-%         p.PicRating.no = dir('Unhealthy*');
-%         %XXX: ADD RANDOMIZATION SO THAT SAME 80 IMAGES AREN'T CHOSEN
-%         %EVERYTIME
-%     else
-%         error('Task cannot proceed without images. Contact Erik (elk@uoregon.edu) if you have continued problems.')
-%     end
-%     
-% end
-
+[mdir,~,~] = fileparts(which('AAModels.m'));
+imgdir = [mdir filesep 'Pics'];
 cd(imgdir);
- 
 
-
-    % Update for appropriate pictures.
-     PICS.in.T = dir('*_T*');
-     PICS.in.H = dir('*_H*');
+ PICS.in.T = dir('*_T*');
+ PICS.in.H = dir('*_H*');
 
 %Check if pictures are present. If not, throw error.
 %Could be updated to search computer to look for pics...
@@ -97,15 +64,17 @@ end
 
 %% Fill in rest of pertinent info
 
+%Half of total trials will be Thin (1); half will be Healthy (0)
 pictype = [ones(STIM.totes/2,1); zeros(STIM.totes/2,1)];
 
+%Based on how many pics present & how many needed, bring in random ordering
+%of pic (# assingment based on sorting in PICS.in.T or .H)
 picdiff = (STIM.totes/2) - length(PICS.in.T);
 if picdiff > 0;
     piclist_T = [randperm(length(PICS.in.T))'; randi(length(PICS.in.T),picdiff,1)];
 elseif picdiff <= 0;
     piclist_T = randperm(length(PICS.in.T),(STIM.totes/2))';
 end
-% piclist_T = reshape(piclist_T,STIM.trials,STIM.blocks/2);
 
 
 picdiff = (STIM.totes/2) - length(PICS.in.H);
@@ -114,12 +83,16 @@ if picdiff > 0;
 elseif picdiff <= 0;
     piclist_H = randperm(length(PICS.in.H),(STIM.totes/2))';
 end
-% piclist_H = reshape(piclist_H,STIM.trials,STIM.blocks/2);
 
 piclist = [piclist_T; piclist_H];
+
+%mash together pictype & piclist
 piclist = [pictype piclist];
+
+%shuffle that list...
 piclist = piclist(randperm(length(piclist)),:);
 
+%assign names to numbers
 picnames = cell(STIM.totes,1);
 for tt = 1:STIM.totes;
     if piclist(tt,1) == 1;
@@ -132,10 +105,6 @@ end
 jitter = BalanceTrials(STIM.totes,1,[STIM.jit]);
 
 AAM = struct;
-% AAM.var(1).trial = [];
-% AAM.var(1).pictype = [];
-% AAM.var(1).picname = [];
-% AAM.var(1).jitter = [];
 
 for trl = 1:length(piclist);
     
@@ -158,7 +127,7 @@ commandwindow;
 
 %%
 %change this to 0 to fill whole screen
-DEBUG=1;
+DEBUG=0;
 
 %set up the screen and dimensions
 
@@ -200,14 +169,18 @@ Screen('TextSize',w,30);
 
 KbName('UnifyKeyNames');
 %% image position matters.
-STIM.framerect = [XCENTER-330; YCENTER-400; XCENTER+330; YCENTER+400];
+STIM.framerect = [XCENTER-300; YCENTER-400; XCENTER+300; YCENTER+400];
 STIM.imgrect = STIM.framerect + [30; 30; -30; -30];
 
 
 %% Do that intro stuff.
-DrawFormattedText(w,'Instructions go here','center','center',COLORS.WHITE);
+DrawFormattedText(w,'You are about to see a series of photos.  When a photo appears on the screen, your job is to decide if you like or dislike it.  Soon after the photo is shown, a green border will appear around the photo.  This indicates that it is time to respond.\n\nPress any key to continue.','center','center',COLORS.WHITE,60,[],[],1.5);
 Screen('Flip',w);
-KbWait();
+KbWait([],2);
+
+DrawFormattedText(w,'When you see the green border, push photos you dislike away from you and pull photos you like towards you using the joystick.  Respond to every photo as quickly as possible.\n\nPress any key to begin the task.','center','center',COLORS.WHITE,60,[],[],1.5);
+Screen('Flip',w);
+KbWait([],2);
 
 %% Do that trial stuff.
 
@@ -244,36 +217,34 @@ for block = 1:STIM.blocks
             
             [Down, ~, Code] = KbCheck();            %wait for key to be pressed
             if Down == 1
+                rt = GetSecs()- RT_start;
                 if any(find(Code) == KEYS.up)
                     %They pushed it away, make it smaller.
                     AAM.data(trial).aa = 0;
-                    
-          
-                    
+                    AAM.data(trial).rt = rt;
+                    break
                 elseif any(find(Code) == KEYS.down)
                     %They pulled it; make it bigger.
                     AAM.data(trial).aa = 1;
-                   
-                    
+                    AAM.data(trial).rt = rt;
+                    break
                 end
-                break
+                
             end
         end
-        %zoom here instead.
+        %zoom that pic.
         if AAM.data(trial).aa == 0;
             while side < STIM.minside
-                side = side + 10;
+                side = side + 4;
                 zoom = STIM.imgrect + [side;side;-side;-side];
-%                 Screen('FillRect',w,COLORS.GREEN,STIM.framerect);
                 Screen('DrawTexture',w,tpic,[],zoom);
                 Screen('Flip',w);
             end
             
         elseif AAM.data(trial).aa == 1;
             while side < STIM.maxside
-                side = side + 10;
+                side = side + 4;
                 zoom = STIM.imgrect + [-side; -side; side; side];
-%                 Screen('FillRect',w,COLORS.GREEN,STIM.framerect);
                 Screen('DrawTexture',w,tpic,[],zoom);
                 Screen('Flip',w);
             end
@@ -284,6 +255,23 @@ for block = 1:STIM.blocks
 end
 
 %% Save that data. 
-
+savedir = [mdir filesep 'Results' filesep];
+cd(savedir);
+try
+save([savedir 'AAM_' num2str(ID) '.mat'],'AAM');
+catch
+    warning('Something is amiss with this save. Retrying to save in a more general location...');
+    try
+        save([mdir filesep 'AAM_' num2str(ID) '.mat'],'AAM');
+    catch
+        warning('STILL problems saving....Try right-clicking on ''AAM'' and Save as...');
+        AAM
+    end
+end
     
 end
+
+
+
+
+
